@@ -259,8 +259,6 @@ class fast3tree:
             whether to use periodic boundary condition or not
         output : str, optional
             specify what to return
-        index_only : bool, optional
-            whether to return only the indices, or the indices and the positions
 
         Returns
         -------
