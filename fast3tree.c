@@ -21,7 +21,7 @@
       void fast3tree_maxmin_rebuild(struct fast3tree *t);
 
    Frees the tree memory and sets tree pointer to NULL.
-      void fast3tree_free(struct fast3tree *t);
+      void fast3tree_free(struct fast3tree **t);
 
    Initialize a fast3tree results structure:
       struct fast3tree_results *fast3tree_results_init(void);
@@ -35,6 +35,14 @@
    assuming periodic boundary conditions:
       int fast3tree_find_sphere_periodic(struct fast3tree *t, 
               struct fast3tree_results *res, float c[FD], float r);
+
+   Find all points outside a box with coordinates (x0,y0,...) to (x1,y1,...)
+      void fast3tree_find_outside_of_box(struct fast3tree *t, 
+              struct fast3tree_results *res, float b[2*FD]);
+
+   Find all points inside a box with coordinates (x0,y0,...) to (x1,y1,...)
+      void fast3tree_find_inside_of_box(struct fast3tree *t, 
+              struct fast3tree_results *res, float b[2*FD]);
 
    Reset memory stored in results structure:
       void fast3tree_results_clear(struct fast3tree_results *res);
@@ -113,12 +121,25 @@ struct fast3tree_results *fast3tree_results_init(void);
 #undef fast3tree_find_sphere
 #define fast3tree_find_sphere _F3TN(FAST3TREE_PREFIX,fast3tree_find_sphere)
 void fast3tree_find_sphere(struct fast3tree *t,
-			   struct fast3tree_results *res, float c[3], float r);
+			   struct fast3tree_results *res, float c[FAST3TREE_DIM], float r);
+
+#undef fast3tree_find_sphere_skip
+#define fast3tree_find_sphere_skip _F3TN(FAST3TREE_PREFIX,fast3tree_find_sphere_skip)
+inline void fast3tree_find_sphere_skip(struct fast3tree *t,
+		  struct fast3tree_results *res, FAST3TREE_TYPE *tp, float r);
 
 #undef fast3tree_find_sphere_periodic
 #define fast3tree_find_sphere_periodic _F3TN(FAST3TREE_PREFIX,fast3tree_find_sphere_periodic)
 int fast3tree_find_sphere_periodic(struct fast3tree *t,
-			   struct fast3tree_results *res, float c[3], float r);
+			   struct fast3tree_results *res, float c[FAST3TREE_DIM], float r);
+
+#undef fast3tree_find_inside_of_box
+#define fast3tree_find_inside_of_box _F3TN(FAST3TREE_PREFIX,fast3tree_find_inside_of_box)
+void fast3tree_find_inside_of_box(struct fast3tree *t, struct fast3tree_results *res, float b[2*FAST3TREE_DIM]);
+
+#undef fast3tree_find_outside_of_box
+#define fast3tree_find_outside_of_box _F3TN(FAST3TREE_PREFIX,fast3tree_find_outside_of_box)
+void fast3tree_find_outside_of_box(struct fast3tree *t, struct fast3tree_results *res, float b[2*FAST3TREE_DIM]);
 
 #undef fast3tree_results_clear
 #define fast3tree_results_clear _F3TN(FAST3TREE_PREFIX,fast3tree_results_clear)
@@ -200,22 +221,58 @@ void fast3tree_maxmin_rebuild(struct fast3tree *t) {
 
 #undef fast3tree_free
 #define fast3tree_free _F3TN(FAST3TREE_PREFIX,fast3tree_free)
-void fast3tree_free(struct fast3tree *t) {
-  if (t) {
-    free(t->root);
-    free(t);
+void fast3tree_free(struct fast3tree **t) {
+  if (!t) return;
+  struct fast3tree *u = *t;
+  if (u) {
+    free(u->root);
+    free(u);
   }
+  *t = NULL;
 }
 
-#undef _fast3tree_fast_box_not_intersect_sphere
-#define _fast3tree_fast_box_not_intersect_sphere \
-  _F3TN(FAST3TREE_PREFIX,_fast3tree_fast_box_not_intersect_sphere)
-/* Some false negatives, but best compromise for speed and accuracy.  */
-static inline int _fast3tree_fast_box_not_intersect_sphere(struct tree3_node *node, float c[FAST3TREE_DIM], float r) {
+#undef _fast3tree_box_inside_box
+#define _fast3tree_box_inside_box \
+  _F3TN(FAST3TREE_PREFIX,_fast3tree_box_inside_box)
+static inline int _fast3tree_box_inside_box(struct tree3_node *node, float b[2*FAST3TREE_DIM]) {
   int i;
   for (i=0; i<FAST3TREE_DIM; i++) {
-    if ((node->min[i]-c[i]) > r) return 1;
-    if ((c[i]-node->max[i]) > r) return 1;
+    if (node->max[i]>b[i+FAST3TREE_DIM]) return 0;
+    if (node->min[i]<b[i]) return 0;
+  }
+  return 1;
+}
+
+
+#undef _fast3tree_box_intersect_box
+#define _fast3tree_box_intersect_box \
+  _F3TN(FAST3TREE_PREFIX,_fast3tree_box_intersect_box)
+static inline int _fast3tree_box_intersect_box(struct tree3_node *node, float b[2*FAST3TREE_DIM]) {
+  int i;
+  for (i=0; i<FAST3TREE_DIM; i++) {
+    if (node->max[i]<b[i]) return 0;
+    if (node->min[i]>b[i+FAST3TREE_DIM]) return 0;
+  }
+  return 1;
+}
+
+
+#undef _fast3tree_box_not_intersect_sphere
+#define _fast3tree_box_not_intersect_sphere \
+  _F3TN(FAST3TREE_PREFIX,_fast3tree_box_not_intersect_sphere)
+/* Accurate, fast */
+static inline int _fast3tree_box_not_intersect_sphere(const struct tree3_node *node, const float c[FAST3TREE_DIM], const float r) {
+  int i;
+  float d = 0, e;
+  const float r2 = r*r;
+  for (i=0; i<FAST3TREE_DIM; i++) {
+    if ((e = c[i]-node->min[i])<0) {
+      d+=e*e;
+      if (d >= r2) return 1;
+    } else if ((e = c[i]-node->max[i])>0) {
+      d+=e*e;
+      if (d >= r2) return 1;
+    }
   }
   return 0;
 }
@@ -223,10 +280,10 @@ static inline int _fast3tree_fast_box_not_intersect_sphere(struct tree3_node *no
 /* Fast, accurate. */
 #undef _fast3tree_box_inside_sphere
 #define _fast3tree_box_inside_sphere _F3TN(FAST3TREE_PREFIX,_fast3tree_box_inside_sphere)
-static inline int _fast3tree_box_inside_sphere(struct tree3_node *node, float c[FAST3TREE_DIM], float r) {
+inline int _fast3tree_box_inside_sphere(const struct tree3_node *node, const float c[FAST3TREE_DIM], const float r) {
   int i;
   float dx, dx2, dist = 0, r2 = r*r;
-  if (fabsf(c[0]-node->min[0]) > r) return 0; //Rapid short-circuit.
+  if (fabs(c[0]-node->min[0]) > r) return 0; //Rapid short-circuit.
   for (i=0; i<FAST3TREE_DIM; i++) {
     dx = node->min[i] - c[i];
     dx *= dx;
@@ -241,18 +298,18 @@ static inline int _fast3tree_box_inside_sphere(struct tree3_node *node, float c[
 
 #undef _fast3tree_sphere_inside_box
 #define _fast3tree_sphere_inside_box _F3TN(FAST3TREE_PREFIX,_fast3tree_sphere_inside_box)
-static inline int _fast3tree_sphere_inside_box(struct tree3_node *node, float c[FAST3TREE_DIM], float r) {
+static inline int _fast3tree_sphere_inside_box(const struct tree3_node *node, const float c[FAST3TREE_DIM], const float r) {
   int i;
   for (i=0; i<FAST3TREE_DIM; i++) {
     if (c[i]-r < node->min[i]) return 0;
-    if (c[i]+r < node->max[i]) return 0;
+    if (c[i]+r > node->max[i]) return 0;
   }
   return 1;
 }
 
 #undef _fast3tree_check_results_space
 #define _fast3tree_check_results_space _F3TN(FAST3TREE_PREFIX,_fast3tree_check_results_space)
-static inline void _fast3tree_check_results_space(struct tree3_node *n, struct fast3tree_results *res) {
+static inline void _fast3tree_check_results_space(const struct tree3_node *n, struct fast3tree_results *res) {
   if (res->num_points + n->num_points > res->num_allocated_points) {
     res->num_allocated_points = res->num_points + n->num_points + 1000;
     res->points = _fast3tree_check_realloc(res->points, 
@@ -262,26 +319,29 @@ static inline void _fast3tree_check_results_space(struct tree3_node *n, struct f
 
 #undef _fast3tree_find_sphere
 #define _fast3tree_find_sphere _F3TN(FAST3TREE_PREFIX,_fast3tree_find_sphere)
-void _fast3tree_find_sphere(struct tree3_node *n, struct fast3tree_results *res, float c[FAST3TREE_DIM], float r) {
+void _fast3tree_find_sphere(const struct tree3_node *n, struct fast3tree_results *res, float c[FAST3TREE_DIM], const float r) {
   int64_t i,j;
   float r2, dist, dx;
 
-  if (_fast3tree_fast_box_not_intersect_sphere(n,c,r)) return;
-  if (_fast3tree_box_inside_sphere(n,c,r)) { /* Entirely inside sphere */  
+  if (_fast3tree_box_not_intersect_sphere(n,c,r)) return;
+#if FAST3TREE_DIM < 6
+  if (_fast3tree_box_inside_sphere(n,c,r)) { /* Entirely inside sphere */
     _fast3tree_check_results_space(n,res);
     for (i=0; i<n->num_points; i++)
       res->points[res->num_points+i] = n->points+i;
     res->num_points += n->num_points;
     return;
   }
+#endif /* FAST3TREE_DIM < 6 */
 
-  r2 = r*r;
   if (n->div_dim < 0) { /* Leaf node */
+    r2 = r*r;
     _fast3tree_check_results_space(n,res);
     for (i=0; i<n->num_points; i++) {
       j = dist = 0;
+      float *pos = n->points[i].pos;
       for (; j<FAST3TREE_DIM; j++) {
-	dx = c[j]-n->points[i].pos[j];
+	dx = c[j]-pos[j];
 	dist += dx*dx;
       }
       if (dist < r2) {
@@ -291,11 +351,56 @@ void _fast3tree_find_sphere(struct tree3_node *n, struct fast3tree_results *res,
     }
     return;
   }
-  /* Otherwise, search in descendant tree nodes. */
-  //if ((n->left->min[n->div_dim] - c[n->div_dim]) < r && (c[n->div_dim] - n->left->max[n->div_dim]) < r)
   _fast3tree_find_sphere(n->left, res, c, r);
   _fast3tree_find_sphere(n->right, res, c, r);
 }
+
+
+#undef _fast3tree_find_sphere_skip
+#define _fast3tree_find_sphere_skip _F3TN(FAST3TREE_PREFIX,_fast3tree_find_sphere_skip)
+void _fast3tree_find_sphere_skip(const struct tree3_node *n, struct fast3tree_results *res, float c[FAST3TREE_DIM], const float r, FAST3TREE_TYPE *tp) {
+  int64_t i,j;
+  float r2, dist, dx;
+
+  if (n->points + n->num_points <= tp) return; //Skip already-processed nodes
+  if (_fast3tree_box_not_intersect_sphere(n,c,r)) return;
+#if FAST3TREE_DIM < 6
+  if (_fast3tree_box_inside_sphere(n,c,r)) { /* Entirely inside sphere */
+    _fast3tree_check_results_space(n,res);
+    for (i=0; i<n->num_points; i++)
+      res->points[res->num_points+i] = n->points+i;
+    res->num_points += n->num_points;
+    return;
+  }
+#endif /* FAST3TREE_DIM < 6 */
+
+  if (n->div_dim < 0) { /* Leaf node */
+    r2 = r*r;
+    _fast3tree_check_results_space(n,res);
+    i=0;
+    if (n->points < tp) {
+      res->points[res->num_points] = tp;
+      res->num_points++;
+      i = (tp-n->points)+1;
+    }
+    for (; i<n->num_points; i++) {
+      j = dist = 0;
+      float *pos = n->points[i].pos;
+      for (; j<FAST3TREE_DIM; j++) {
+	dx = c[j]-pos[j];
+	dist += dx*dx;
+      }
+      if (dist < r2) {
+	res->points[res->num_points] = n->points + i;
+	res->num_points++;
+      }
+    }
+    return;
+  }
+  _fast3tree_find_sphere_skip(n->left, res, c, r, tp);
+  _fast3tree_find_sphere_skip(n->right, res, c, r, tp);
+}
+
 
 struct fast3tree_results *fast3tree_results_init(void) {
   struct fast3tree_results *res = 
@@ -311,28 +416,76 @@ void fast3tree_find_sphere(struct fast3tree *t, struct fast3tree_results *res, f
   _fast3tree_find_sphere(t->root, res, c, r);
 }
 
-#undef _fast3tree_find_sphere_periodic_dim
-#define _fast3tree_find_sphere_periodic_dim _F3TN(FAST3TREE_PREFIX,_fast3tree_find_sphere_periodic_dim)
-void _fast3tree_find_sphere_periodic_dim(struct fast3tree *t, struct fast3tree_results *res, float c[FAST3TREE_DIM], float r, float dims[FAST3TREE_DIM], int dim) {
-  float c2[FAST3TREE_DIM];
-  if (dim<0) {
-    _fast3tree_find_sphere(t->root, res, c, r);
+inline void fast3tree_find_sphere_skip(struct fast3tree *t, struct fast3tree_results *res, FAST3TREE_TYPE *tp, float r) {
+  res->num_points = 0;
+  _fast3tree_find_sphere_skip(t->root, res, tp->pos, r, tp);
+}
+
+
+/* Guaranteed to be stable with respect to floating point round-off errors.*/
+#undef _fast3tree_find_sphere_offset
+#define _fast3tree_find_sphere_offset _F3TN(FAST3TREE_PREFIX,_fast3tree_find_sphere_offset)
+void _fast3tree_find_sphere_offset(const struct tree3_node *n, struct fast3tree_results *res, float c[FAST3TREE_DIM], float c2[FAST3TREE_DIM], float o[FAST3TREE_DIM], const float r) {
+  int64_t i,j;
+  float r2, dist, dx;
+
+  if (_fast3tree_box_not_intersect_sphere(n,c2,r*1.01)) return;
+#if FAST3TREE_DIM < 6
+  if (_fast3tree_box_inside_sphere(n,c2,r*0.99)) { /* Entirely inside sphere */
+    _fast3tree_check_results_space(n,res);
+    for (i=0; i<n->num_points; i++)
+      res->points[res->num_points+i] = n->points+i;
+    res->num_points += n->num_points;
     return;
   }
-  memcpy(c2, c, sizeof(float)*FAST3TREE_DIM);
-  _fast3tree_find_sphere_periodic_dim(t, res, c2, r, dims, dim-1);
+#endif /* FAST3TREE_DIM < 6 */
+
+  if (n->div_dim < 0) { /* Leaf node */
+    r2 = r*r;
+    _fast3tree_check_results_space(n,res);
+    for (i=0; i<n->num_points; i++) {
+      j = dist = 0;
+      float *pos = n->points[i].pos;
+      for (; j<FAST3TREE_DIM; j++) {
+	dx = o[j] - fabs(c[j]-pos[j]);
+	dist += dx*dx;
+      }
+      if (dist < r2) {
+	res->points[res->num_points] = n->points + i;
+	res->num_points++;
+      }
+    }
+    return;
+  }
+  _fast3tree_find_sphere_offset(n->left, res, c, c2, o, r);
+  _fast3tree_find_sphere_offset(n->right, res, c, c2, o, r);
+}
+
+#undef _fast3tree_find_sphere_periodic_dim
+#define _fast3tree_find_sphere_periodic_dim _F3TN(FAST3TREE_PREFIX,_fast3tree_find_sphere_periodic_dim)
+void _fast3tree_find_sphere_periodic_dim(struct fast3tree *t, struct fast3tree_results *res, float c[FAST3TREE_DIM], float c2[FAST3TREE_DIM], float o[FAST3TREE_DIM], float r, float dims[FAST3TREE_DIM], int dim) {
+  float c3[FAST3TREE_DIM];
+  if (dim<0) {
+    _fast3tree_find_sphere_offset(t->root, res, c, c2, o, r);
+    return;
+  }
+  memcpy(c3, c2, sizeof(float)*FAST3TREE_DIM);
+  o[dim]=0;
+  _fast3tree_find_sphere_periodic_dim(t, res, c, c3, o, r, dims, dim-1);
   if (c[dim]+r > t->root->max[dim]) {
-    c2[dim] = c[dim]-dims[dim];
-    _fast3tree_find_sphere_periodic_dim(t, res, c2, r, dims, dim-1);
+    c3[dim] = c[dim]-dims[dim];
+    o[dim] = dims[dim];
+    _fast3tree_find_sphere_periodic_dim(t, res, c, c3, o, r, dims, dim-1);
   }
   if (c[dim]-r < t->root->min[dim]) {
-    c2[dim] = c[dim]+dims[dim];
-    _fast3tree_find_sphere_periodic_dim(t, res, c2, r, dims, dim-1);
+    c3[dim] = c[dim]+dims[dim];
+    o[dim] = dims[dim];
+    _fast3tree_find_sphere_periodic_dim(t, res, c, c3, o, r, dims, dim-1);
   }
 }
 
 int fast3tree_find_sphere_periodic(struct fast3tree *t, struct fast3tree_results *res, float c[FAST3TREE_DIM], float r) {
-  float dims[FAST3TREE_DIM];
+  float dims[FAST3TREE_DIM], o[FAST3TREE_DIM];
   int i;
   
   if (_fast3tree_sphere_inside_box(t->root, c, r)) {
@@ -342,13 +495,89 @@ int fast3tree_find_sphere_periodic(struct fast3tree *t, struct fast3tree_results
 
   for (i=0; i<FAST3TREE_DIM; i++) {
     dims[i] = t->root->max[i] - t->root->min[i];
+    o[i] = 0;
     if (r*2.0 > dims[i]) return 0; //Avoid wraparound intersections.
   }
 
   res->num_points = 0;
-  _fast3tree_find_sphere_periodic_dim(t, res, c, r, dims, FAST3TREE_DIM-1);
+  _fast3tree_find_sphere_periodic_dim(t, res, c, c, o, r, dims, FAST3TREE_DIM-1);
   return 1;
 }
+
+#undef _fast3tree_find_outside_of_box
+#define _fast3tree_find_outside_of_box _F3TN(FAST3TREE_PREFIX,_fast3tree_find_outside_of_box)
+static inline void _fast3tree_find_outside_of_box(struct tree3_node *n, struct fast3tree_results *res, float b[2*FAST3TREE_DIM]) {
+  int64_t i,j;
+  if (_fast3tree_box_inside_box(n, b)) return;
+  if (!_fast3tree_box_intersect_box(n, b)) {
+    _fast3tree_check_results_space(n,res);
+    for (i=0; i<n->num_points; i++) {
+      res->points[res->num_points] = n->points+i;
+      res->num_points++;
+    }
+  }
+  else {
+    if (n->div_dim < 0) {
+      _fast3tree_check_results_space(n,res);
+      for (i=0; i<n->num_points; i++) {
+	for (j=0; j<FAST3TREE_DIM; j++) {
+	  if (n->points[i].pos[j] < b[j]) break;
+	  if (n->points[i].pos[j] > b[j+FAST3TREE_DIM]) break;
+	}
+	if (j==FAST3TREE_DIM) continue; //Inside
+	res->points[res->num_points] = n->points+i;
+	res->num_points++;
+      }
+    }
+    else {
+      _fast3tree_find_outside_of_box(n->left, res, b);
+      _fast3tree_find_outside_of_box(n->right, res, b);
+    }
+  }
+}
+
+void fast3tree_find_outside_of_box(struct fast3tree *t, struct fast3tree_results *res, float b[2*FAST3TREE_DIM]) {
+  res->num_points = 0;
+  _fast3tree_find_outside_of_box(t->root, res, b);
+}
+
+#undef _fast3tree_find_inside_of_box
+#define _fast3tree_find_inside_of_box _F3TN(FAST3TREE_PREFIX,_fast3tree_find_inside_of_box)
+static inline void _fast3tree_find_inside_of_box(struct tree3_node *n, struct fast3tree_results *res, float b[2*FAST3TREE_DIM]) {
+  int64_t i,j;
+  if (!_fast3tree_box_intersect_box(n, b)) return;
+  if (_fast3tree_box_inside_box(n, b)) {
+    _fast3tree_check_results_space(n,res);
+    for (i=0; i<n->num_points; i++) {
+      res->points[res->num_points] = n->points+i;
+      res->num_points++;
+    }
+  }
+  else {
+    if (n->div_dim < 0) {
+      _fast3tree_check_results_space(n,res);
+      for (i=0; i<n->num_points; i++) {
+	for (j=0; j<FAST3TREE_DIM; j++) {
+	  if (n->points[i].pos[j] < b[j]) break;
+	  if (n->points[i].pos[j] > b[j+FAST3TREE_DIM]) break;
+	}
+	if (j!=FAST3TREE_DIM) continue;
+	res->points[res->num_points] = n->points+i;
+	res->num_points++;
+      }
+    }
+    else {
+      _fast3tree_find_inside_of_box(n->left, res, b);
+      _fast3tree_find_inside_of_box(n->right, res, b);
+    }
+  }
+}
+
+void fast3tree_find_inside_of_box(struct fast3tree *t, struct fast3tree_results *res, float b[2*FAST3TREE_DIM]) {
+  res->num_points = 0;
+  _fast3tree_find_inside_of_box(t->root, res, b);
+}
+
 
 void fast3tree_results_clear(struct fast3tree_results *res) {
   if (res->points) free(res->points);
@@ -378,7 +607,8 @@ static inline int64_t _fast3tree_find_largest_dim(float * min, float * max) {
 
 #undef _fast3tree_sort_dim_pos
 #define _fast3tree_sort_dim_pos _F3TN(FAST3TREE_PREFIX,_fast3tree_sort_dim_pos)
-static inline int64_t _fast3tree_sort_dim_pos(struct tree3_node * node) {
+static inline int64_t _fast3tree_sort_dim_pos(struct tree3_node * node,
+					      float balance) {
   int64_t dim = node->div_dim = 
     _fast3tree_find_largest_dim(node->min, node->max);
   FAST3TREE_TYPE *p = node->points;
@@ -426,7 +656,7 @@ void _fast3tree_split_node(struct fast3tree *t, struct tree3_node *node) {
   struct tree3_node *left, *right;
   int64_t left_index, node_index;
 
-  num_left = _fast3tree_sort_dim_pos(node);
+  num_left = _fast3tree_sort_dim_pos(node, 1.0);
   if (num_left == node->num_points || num_left == 0) 
   { //In case all node points are at same spot
     node->div_dim = -1;
@@ -435,7 +665,7 @@ void _fast3tree_split_node(struct fast3tree *t, struct tree3_node *node) {
 
   node_index = node - t->root;
   if ((t->num_nodes+2) > t->allocated_nodes) {
-    t->allocated_nodes += 1000;
+    t->allocated_nodes = t->allocated_nodes*1.05 + 1000;
     t->root = _fast3tree_check_realloc(t->root, sizeof(struct tree3_node)*(t->allocated_nodes), "Tree nodes");
     node = t->root + node_index;
   }
@@ -544,7 +774,7 @@ void _fast3tree_maxmin_rebuild(struct tree3_node *n) {
 #define _fast3tree_check_realloc _F3TN(FAST3TREE_PREFIX,_fast3tree_check_realloc)
 void *_fast3tree_check_realloc(void *ptr, size_t size, char *reason) {
   void *res = realloc(ptr, size);
-  if (res == NULL) {
+  if ((res == NULL) && (size > 0)) {
     fprintf(stderr, "[Error] Failed to allocate memory (%s)!\n", reason);
     exit(1);
   }
@@ -562,6 +792,38 @@ void _fast3tree_set_minmax(struct fast3tree *t, float min, float max) {
   }
 }
 
+
+#undef _fast3tree_find_next_closest_dist
+#define _fast3tree_find_next_closest_dist _F3TN(FAST3TREE_PREFIX,_fast3tree_find_next_closest_dist)
+float _fast3tree_find_next_closest_dist(const struct tree3_node *n, const float c[FAST3TREE_DIM], float r, const struct tree3_node *o_n, int64_t *counts) {
+  int64_t i,j;
+  float r2, dist, dx, *pos;
+
+  if (_fast3tree_box_not_intersect_sphere(n,c,r) || (o_n==n)) return r;
+  if (n->div_dim < 0) { /* Leaf node */
+    r2 = r*r;
+    for (i=0; i<n->num_points; i++) {
+      j = dist = 0;
+      pos = n->points[i].pos;
+      for (; j<FAST3TREE_DIM; j++) {
+	dx = c[j]-pos[j];
+	dist += dx*dx;
+      }
+      if (dist < r2) r2 = dist;
+    }
+    *counts = (*counts)+1;
+    return sqrt(r2);
+  }
+  struct tree3_node *n1=n->left, *n2=n->right;
+  if (c[n->div_dim] > 0.5*(n->min[n->div_dim]+n->max[n->div_dim])) {
+    n1 = n->right;
+    n2 = n->left;
+  }
+  r = _fast3tree_find_next_closest_dist(n1, c, r, o_n, counts);
+  return _fast3tree_find_next_closest_dist(n2, c, r, o_n, counts);
+}
+
+
 #undef fast3tree_find_next_closest_distance
 #define fast3tree_find_next_closest_distance _F3TN(FAST3TREE_PREFIX,fast3tree_find_next_closest_distance)
 float fast3tree_find_next_closest_distance(struct fast3tree *t, struct fast3tree_results *res, float c[FAST3TREE_DIM]) {
@@ -577,24 +839,22 @@ float fast3tree_find_next_closest_distance(struct fast3tree *t, struct fast3tree
   while (nd != t->root && (nd->min[nd->parent->div_dim] == nd->max[nd->parent->div_dim])) nd = nd->parent;
 
   min_dist = 0;
+  for (j=0; j<FAST3TREE_DIM; j++) {
+    dx = nd->max[j]-nd->min[j];
+    min_dist += dx*dx;
+  }
+
   for (i=0; i<nd->num_points; i++) {
     dist = 0;
     for (j=0; j<FAST3TREE_DIM; j++) {
       dx = c[j] - nd->points[i].pos[j];
       dist += dx*dx;
     }
-    if (!min_dist || (dist && dist < min_dist)) min_dist = dist;
+    if (dist && (dist < min_dist)) min_dist = dist;
   }
-  min_dist = sqrt(min_dist);
-
-  fast3tree_find_sphere(t, res, c, min_dist*1.01);
-  for (i=0; i<res->num_points; i++) {
-    dist = 0;
-    for (j=0; j<FAST3TREE_DIM; j++) { dx = res->points[i]->pos[j] - c[j]; dist += dx*dx; }
-    if ((dist && dist < min_dist)) min_dist = dist;
-  }
-  //if (!min_dist) fprintf(stderr, "Huh???\n");
-  return sqrt(min_dist);
+  int64_t counts = 0;
+  min_dist = _fast3tree_find_next_closest_dist(t->root,c,sqrt(min_dist), nd, &counts);
+  return min_dist;
 }
 
 #undef float

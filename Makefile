@@ -7,10 +7,7 @@ OBJS = fast3tree_3d.so fast3tree_2d.so
 
 all: $(OBJS)
 
-fast3tree_3d.so: fast3tree_3d.c fast3tree.c
-	$(CC) $(CFLAGS) $(LDFLAGS) $< -o $@ $(OFLAGS)
-
-fast3tree_2d.so: fast3tree_2d.c fast3tree.c
+%.so: %.c fast3tree.c
 	$(CC) $(CFLAGS) $(LDFLAGS) $< -o $@ $(OFLAGS)
 
 clean:
