@@ -141,7 +141,7 @@ class fast3tree:
         if self._dim is None:
             self._set_dim(s[1])
         elif s[1] != self._dim:
-            raise ValueError('data must have the last dim = %d.'%self.dim)
+            raise ValueError('data must have the last dim = %d.'%self._dim)
 
         self.data = np.empty(s[0], self._type)
         self.data['idx'] = np.arange(s[0], dtype=np.int64)
