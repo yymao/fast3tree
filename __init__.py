@@ -86,7 +86,7 @@ def get_distance(center, pos, box_size=-1):
 
 # define fast3tree class
 class fast3tree:
-    def __init__(self, data):
+    def __init__(self, data, raw=False):
         '''
         Initialize a fast3tree from a list of points.
         Please call fast3tree with the `with` statment to ensure memory safe.
@@ -107,7 +107,13 @@ class fast3tree:
         query_box(corner1, corner2)
         '''
         self._dim = None
-        self._copy_data(data)
+        if raw:
+            self._set_dim(data.dtype[1].shape[0])
+            if data.dtype != self._type:
+                raise ValueError("raw data not in correct format.")
+            self.data = data
+        else:
+            self._copy_data(data)
         self._tree_ptr =  self._lib.fast3tree_init( \
                 np.int64(self.data.shape[0]), self.data)
         self._res_ptr = self._lib.fast3tree_results_init()
@@ -120,17 +126,20 @@ class fast3tree:
     def __exit__(self, exc_type, exc_value, traceback):
         self.free()
 
+    def _set_dim(self, dim):
+        if dim not in _c_libs_dict:
+            raise ValueError('data must have the last dim = %s.'%(\
+                    ', '.join(map(str, _c_libs_dict.keys()))))
+        self._dim = dim
+        self._lib, self._type = _c_libs_dict[dim]
+
     def _copy_data(self, data):
         data = np.asarray(data)
         s = data.shape
         if len(s) != 2:
             raise ValueError('data must be a 2-d array.')
         if self._dim is None:
-            if s[1] not in _c_libs_dict:
-                raise ValueError('data must have the last dim = %s.'%(\
-                        ', '.join(map(str, _c_libs_dict.keys()))))
-            self._dim = s[1]
-            self._lib, self._type = _c_libs_dict[self._dim]
+            self._set_dim(s[1])
         elif s[1] != self._dim:
             raise ValueError('data must have the last dim = %d.'%self.dim)
 
@@ -144,21 +153,28 @@ class fast3tree:
     def _check_opened_by_with_pass(self):
         pass
 
-    def _read_results(self, count_only, index_only):
+    def _read_results(self, output):
+        o = output[0].lower()
         res = _read_from_address(self._res_ptr, _results_dtype, 1)[0]
-        if count_only:
+        if o=='c':
             return res['num_points']
         if res[0]:
             points = _read_from_address(res['points'], _ptr_ctype, res[0])
             points = (points - self.data.ctypes.data)/self._type.itemsize
         else:
             points = []
-        if index_only:
+        if o == 'i':
             return self.data['idx'][points]
-        else:
+        elif o == 'p':
+            return self.data['pos'][points]
+        elif o == 'b':
             return self.data['idx'][points], self.data['pos'][points]
+        elif o == 'r':
+            return self.data[points]
+        else:
+            return self.data['idx'][points]
 
-    def rebuild(self, data=None):
+    def rebuild(self, data=None, raw=False):
         '''
         Rebuild a fast3tree from a new (or the same) list of points.
 
@@ -170,7 +186,12 @@ class fast3tree:
         '''
         self._check_opened_by_with()
         if data is not None:
-            self._copy_data(data)
+            if raw:
+                if data.dtype != self._type:
+                    raise ValueError("raw data not in correct format.")
+                self.data = raw
+            else:
+                self._copy_data(data)
         self._lib.fast3tree_rebuild(self._tree_ptr, \
                 np.int64(self.data.shape[0]), self.data)
 
@@ -224,8 +245,7 @@ class fast3tree:
                 self._res_ptr, center_arr)
         return float(d)
 
-    def query_radius(self, center, r, periodic=False, count_only=False, \
-                index_only=True):
+    def query_radius(self, center, r, periodic=False, output='index'):
         '''
         Find all points within a sphere centered at center with radius r.
 
@@ -237,20 +257,19 @@ class fast3tree:
             radius of the sphere
         periodic : bool, optional
             whether to use periodic boundary condition or not
-        count_only : bool, optional
-            whether to return only the number of particles
+        output : str, optional
+            specify what to return
         index_only : bool, optional
             whether to return only the indices, or the indices and the positions
 
         Returns
         -------
-        if count_only :
-            count : int
-        elif index_only :
-            indices : array_like
-        else:
-            indices : array_like
-            positions : array_like
+        Could be one of the followings.
+        count : int         [if output=='count']
+        index : array_like  [if output=='index']
+        pos : array_like    [if output=='pos']
+        index, pos : tuple  [if output=='both']
+        data : array_like   [if output=='raw']
         '''
         self._check_opened_by_with()
         center_arr = np.asarray(center, dtype=_float_dtype)
@@ -260,10 +279,9 @@ class fast3tree:
         else:
             self._lib.fast3tree_find_sphere(self._tree_ptr, self._res_ptr, \
                     center_arr, _float_dtype(r))
-        return self._read_results(count_only, index_only)
+        return self._read_results(output)
 
-    def query_box(self, corner1, corner2, inside=True, count_only=False, \
-                index_only=True):
+    def query_box(self, corner1, corner2, inside=True, output='index'):
         '''
         Find all points within a box.
 
@@ -275,20 +293,17 @@ class fast3tree:
             position of the upper right corner of the box.
         inside : bool, optional
             whether to find the particles inside or outside the box
-        count_only : bool, optional
-            whether to return only the number of particles
-        index_only : bool, optional
-            whether to return only the indices, or the indices and the positions
+        output : str, optional
+            specify what to return
 
         Returns
         -------
-        if count_only :
-            count : int
-        elif index_only :
-            indices : array_like
-        else:
-            indices : array_like
-            positions : array_like
+        Could be one of the followings.
+        count : int         [if output=='count']
+        index : array_like  [if output=='index']
+        pos : array_like    [if output=='pos']
+        index, pos : tuple  [if output=='both']
+        data : array_like   [if output=='raw']
         '''
         self._check_opened_by_with()
         box_arr = np.asarray([corner1, corner2], dtype=_float_dtype)
@@ -298,5 +313,5 @@ class fast3tree:
         else:
             self._lib.fast3tree_find_outside_of_box(self._tree_ptr, \
                     self._res_ptr, box_arr)
-        return self._read_results(count_only, index_only)
+        return self._read_results(output)
 
