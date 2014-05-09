@@ -189,7 +189,7 @@ class fast3tree:
             if raw:
                 if data.dtype != self._type:
                     raise ValueError("raw data not in correct format.")
-                self.data = raw
+                self.data = data
             else:
                 self._copy_data(data)
         self._lib.fast3tree_rebuild(self._tree_ptr, \
