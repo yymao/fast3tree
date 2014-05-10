@@ -270,7 +270,7 @@ class fast3tree:
         data : array_like   [if output=='raw']
         '''
         self._check_opened_by_with()
-        center_arr = np.asarray(center, dtype=_float_dtype)
+        center_arr = np.array(center, dtype=_float_dtype)
         if periodic:
             i = self._lib.fast3tree_find_sphere_periodic(self._tree_ptr, \
                     self._res_ptr, center_arr, _float_dtype(r))
@@ -304,7 +304,7 @@ class fast3tree:
         data : array_like   [if output=='raw']
         '''
         self._check_opened_by_with()
-        box_arr = np.asarray([corner1, corner2], dtype=_float_dtype)
+        box_arr = np.array([corner1, corner2], dtype=_float_dtype)
         if inside:
             self._lib.fast3tree_find_inside_of_box(self._tree_ptr, \
                     self._res_ptr, box_arr)

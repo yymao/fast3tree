@@ -3,7 +3,7 @@ CFLAGS=-m64 -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_
 LDFLAGS=-shared
 OFLAGS=-lm -O3 -std=c99
 
-OBJS = fast3tree_3d.so fast3tree_2d.so
+OBJS = fast3tree_3d.so
 
 all: $(OBJS)
 
