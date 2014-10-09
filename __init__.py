@@ -11,10 +11,10 @@ _float_ctype = C.ctypes.c_float
 
 def _load_fast3tree_lib(dim):
     mytype = np.dtype([('idx', np.int64), ('pos', _float_dtype, dim)], align=True)
-    mytype_ctype =  C.ndpointer(mytype, ndim=1, flags='C,A')
-    center_ctype = C.ndpointer(dtype=_float_dtype, ndim=1, shape=(dim,), flags='C,A')
-    box_ctype = C.ndpointer(dtype=_float_dtype, ndim=2, shape=(2,dim), flags='C,A')
-    tree_ptr_ptr = C.ndpointer(dtype=_ptr_dtype, ndim=1, shape=(1,), flags='C,A')
+    mytype_ctype =  C.ndpointer(mytype, ndim=1, flags='C')
+    center_ctype = C.ndpointer(dtype=_float_dtype, ndim=1, shape=(dim,), flags='C')
+    box_ctype = C.ndpointer(dtype=_float_dtype, ndim=2, shape=(2,dim), flags='C')
+    tree_ptr_ptr = C.ndpointer(dtype=_ptr_dtype, ndim=1, shape=(1,), flags='C')
 
     c_lib = C.load_library('fast3tree_%dd'%(dim), __path__[0])
 
