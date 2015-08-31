@@ -108,7 +108,7 @@ class fast3tree:
         '''
         self._dim = None
         if raw:
-            self._set_dim(data.dtype[1].shape[0])
+            self._set_dim(data.dtype[1].shape[1])
             if data.dtype != self._type:
                 raise ValueError("raw data not in correct format.")
             self.data = data
