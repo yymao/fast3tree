@@ -1,13 +1,14 @@
+# fast3tree
+
 This is a Python wrapper of Peter Behroozi's `fast3tree` code, which was
 (shamlessly) taken from his [Rockstar halo finder](https://bitbucket.org/gfcstanford/rockstar).
 
-Usage
------
-On a 64-bit machine, just type 
+## Installation
 
-    make
+    pip install git+ssh://git@bitbucket.org/yymao/fast3tree.git
 
-to make the c libraries. 
+
+## Example
 
 Here's an example of how you use it in your python code
 
