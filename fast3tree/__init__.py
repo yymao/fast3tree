@@ -164,7 +164,7 @@ class fast3tree:
             return res['num_points']
         if res[0]:
             points = _read_from_address(res['points'], _ptr_ctype, res[0])
-            points = (points - self.data.ctypes.data)/self._type.itemsize
+            points = (points - self.data.ctypes.data)/self._lib.input_dtype.itemsize
         else:
             points = []
         if o == 'i':
