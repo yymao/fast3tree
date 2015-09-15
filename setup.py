@@ -11,7 +11,7 @@ make_lib(3, True, True, lib_path)
 
 setup(
     name='fast3tree',
-    version='0.1.1',
+    version='0.1.2',
     description='A Python wrapper of Peter Behroozi\'s fast3tree code.',
     url='https://bitbucket.org/yymao/fast3tree',
     author='Yao-Yuan Mao, Peter Behroozi',
@@ -29,7 +29,7 @@ setup(
     use_2to3=True,
     packages=['fast3tree'],
     package_data={
-        'fast3tree': ['fast3tree.c'],
+        'fast3tree': ['fast3tree.c', get_lib_name(3, True)],
     },
     install_requires = ['numpy'],
 )

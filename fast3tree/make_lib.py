@@ -5,6 +5,8 @@ def get_lib_name(dim, use_double):
     return 'fast3tree_{0}_{1}'.format(dim, 'd' if use_double else 'f')
 
 def make_lib(dim, use_double, remake=False, path=None):
+    if dim < 2:
+        raise ValueError('`dim` needs to be at least 2.')
     here = path or os.path.abspath(os.path.dirname(__file__)) 
     cwd = os.getcwd()
     os.chdir(here)
