@@ -5,7 +5,7 @@ This is a Python wrapper of Peter Behroozi's `fast3tree` code, which was
 
 ## Installation
 
-    pip install git+ssh://git@bitbucket.org/yymao/fast3tree.git
+    pip install https://bitbucket.org/yymao/fast3tree/get/master.zip
 
 
 ## Example
