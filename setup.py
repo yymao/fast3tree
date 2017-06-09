@@ -6,7 +6,7 @@ import os
 from setuptools import setup
 
 lib_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'fast3tree')
-execfile(os.path.join(lib_path, 'make_lib.py'))
+exec(open(os.path.join(lib_path, 'make_lib.py')).read())
 make_lib(3, True, True, lib_path)
 
 setup(
