@@ -3,14 +3,18 @@ import os
 import warnings
 import numpy as np
 import numpy.ctypeslib as C
-from make_lib import make_lib
+from .make_lib import make_lib
+
+try:
+    range = xrange
+except NameError:
+    pass
 
 _ptr_dtype = np.uint64
 _ptr_ctype = C.ctypes.c_uint64
 _results_dtype =  np.dtype([ \
         ('num_points', np.int64), ('num_allocated_points', np.int64),
         ('points', np.uint64)], align=True)
-
 
 class _fast3tree_lib():
     def __init__(self, dim, use_double):
@@ -75,10 +79,17 @@ class _fast3tree_lib():
         self.float_dtype = float_dtype
         self.input_dtype = mytype
 
-
-def _read_from_address(ptr, dtype, count):
-    return np.frombuffer(np.core.multiarray.int_asbuffer(\
-            long(ptr), np.dtype(dtype).itemsize*count), dtype, count=count)
+if hasattr(C.ctypes.pythonapi, 'PyMemoryView_FromMemory'):
+    def _read_from_address(ptr, dtype, count):
+        buf_from_mem = C.ctypes.pythonapi.PyMemoryView_FromMemory
+        buf_from_mem.restype = C.ctypes.py_object
+        buf_from_mem.argtypes = (_ptr_ctype, C.ctypes.c_int, C.ctypes.c_int)
+        buffer = buf_from_mem(ptr, np.dtype(dtype).itemsize*count, 0x100)
+        return np.frombuffer(buffer, dtype, count=count)
+else:
+    def _read_from_address(ptr, dtype, count):
+        return np.frombuffer(np.core.multiarray.int_asbuffer(\
+                long(ptr), np.dtype(dtype).itemsize*count), dtype, count=count)
 
 
 def get_distance(center, pos, box_size=-1):
@@ -148,7 +159,7 @@ class fast3tree:
             elif s[1] != self._lib.dim:
                 raise ValueError('data must have the last dim = %d.'%self._lib.dim)
             self.data = np.empty(s[0], self._lib.input_dtype)
-            self.data['idx'][:] = xrange(s[0])
+            self.data['idx'][:] = range(s[0])
             self.data['pos'][:] = data
 
     def _check_opened_by_with_warn(self):
@@ -164,7 +175,7 @@ class fast3tree:
             return res['num_points']
         if res[0]:
             points = _read_from_address(res['points'], _ptr_ctype, res[0])
-            points = (points - self.data.ctypes.data)/self._lib.input_dtype.itemsize
+            points = (points - self.data.ctypes.data) // self._lib.input_dtype.itemsize
         else:
             points = []
         if o == 'i':
