@@ -3,12 +3,12 @@ import os
 import warnings
 import numpy as np
 import numpy.ctypeslib as C
-from make_lib import get_lib_name, make_lib
+from make_lib import make_lib
 
 _ptr_dtype = np.uint64
 _ptr_ctype = C.ctypes.c_uint64
 _results_dtype =  np.dtype([ \
-        ('num_points', np.int64), ('num_allocated_points', np.int64), 
+        ('num_points', np.int64), ('num_allocated_points', np.int64),
         ('points', np.uint64)], align=True)
 
 
@@ -30,38 +30,38 @@ class _fast3tree_lib():
         box_ctype = C.ndpointer(dtype=float_dtype, ndim=2, shape=(2,dim), flags='C')
         tree_ptr_ptr = C.ndpointer(dtype=_ptr_dtype, ndim=1, shape=(1,), flags='C')
 
-        c_lib = C.load_library(*make_lib(self.dim, self.use_double))
-    
+        c_lib = C.ctypes.cdll[make_lib(self.dim, self.use_double)]
+
         c_lib.fast3tree_init.restype = _ptr_ctype
         c_lib.fast3tree_init.argtypes = [C.ctypes.c_int64, mytype_ctype]
-    
+
         c_lib.fast3tree_rebuild.restype = None
         c_lib.fast3tree_rebuild.argtypes = [_ptr_ctype, C.ctypes.c_int64, mytype_ctype]
-    
+
         c_lib.fast3tree_maxmin_rebuild.restype = None
         c_lib.fast3tree_maxmin_rebuild.argtypes = [_ptr_ctype]
-    
+
         c_lib.fast3tree_free.restype = None
         c_lib.fast3tree_free.argtypes = [tree_ptr_ptr]
-    
+
         c_lib.fast3tree_results_init.restype = _ptr_ctype
         c_lib.fast3tree_results_init.argtypes = None
-    
+
         c_lib.fast3tree_find_sphere.restype = None
         c_lib.fast3tree_find_sphere.argtypes = [_ptr_ctype, _ptr_ctype, center_ctype, float_ctype]
-    
+
         c_lib.fast3tree_find_sphere_periodic.restype = C.ctypes.c_int
         c_lib.fast3tree_find_sphere_periodic.argtypes = [_ptr_ctype, _ptr_ctype, center_ctype, float_ctype]
-    
+
         c_lib.fast3tree_find_inside_of_box.restype = None
         c_lib.fast3tree_find_inside_of_box.argtypes = [_ptr_ctype, _ptr_ctype, box_ctype]
-    
+
         c_lib.fast3tree_find_outside_of_box.restype = None
         c_lib.fast3tree_find_outside_of_box.argtypes = [_ptr_ctype, _ptr_ctype, box_ctype]
-    
+
         c_lib.fast3tree_results_clear.restype = None
         c_lib.fast3tree_results_clear.argtypes = [_ptr_ctype]
-    
+
         c_lib.fast3tree_results_free.restype = None
         c_lib.fast3tree_results_free.argtypes = [_ptr_ctype]
 
@@ -97,10 +97,10 @@ class fast3tree:
     def __init__(self, data, raw=False, force_double=False):
         '''
         Initialize a fast3tree from a list of points.
-        Please call fast3tree with the `with` statment to ensure memory safe.
-        
+        Please call fast3tree with the `with` statement to ensure memory safe.
+
             with fast3tree(data) as tree:
-        
+
         Parameters
         ----------
         data : array_like
@@ -152,7 +152,7 @@ class fast3tree:
             self.data['pos'][:] = data
 
     def _check_opened_by_with_warn(self):
-        warnings.warn("Please use `with` statment to open a fast3tree object.")
+        warnings.warn("Please use `with` statement to open a fast3tree object.")
 
     def _check_opened_by_with_pass(self):
         pass
@@ -186,7 +186,7 @@ class fast3tree:
         ----------
         data : array_like, optional
             data to rebuild the tree. must be a 2-d array.
-            Default: None (use the exisiting data to rebuild)
+            Default: None (use the existing data to rebuild)
         '''
         self._check_opened_by_with()
         if data is not None:
@@ -212,7 +212,7 @@ class fast3tree:
         self._lib.run.fast3tree_set_minmax(self._tree_ptr, \
                 self._lib.float_dtype(Min), \
                 self._lib.float_dtype(Max))
-        
+
     def free(self):
         ''' Frees the memory of the tree and the results. '''
         self._check_opened_by_with()
@@ -235,7 +235,7 @@ class fast3tree:
         Parameters
         ----------
         center : array_like
-            
+
         Returns
         -------
         distance : float
@@ -313,4 +313,3 @@ class fast3tree:
             self._lib.run.fast3tree_find_outside_of_box(self._tree_ptr, \
                     self._res_ptr, box_arr)
         return self._read_results(output)
-
