@@ -14,8 +14,9 @@ setup(
     version='0.2.0',
     description='A Python wrapper of Peter Behroozi\'s fast3tree code.',
     url='https://bitbucket.org/yymao/fast3tree',
-    author='Yao-Yuan Mao, Peter Behroozi',
-    author_email='Yao-Yuan Mao <yymao.astro@gmail.com>',
+    download_url = 'https://bitbucket.org/yymao/fast3tree/get/v0.2.0.tar.gz',
+    author='Yao-Yuan Mao',
+    author_email='yymao.astro@gmail.com',
     license='MIT',
     classifiers=[
         'Development Status :: 3 - Alpha',
