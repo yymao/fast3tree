@@ -11,7 +11,7 @@ make_lib(3, True, True, lib_path)
 
 setup(
     name='fast3tree',
-    version='0.1.4',
+    version='0.2.0',
     description='A Python wrapper of Peter Behroozi\'s fast3tree code.',
     url='https://bitbucket.org/yymao/fast3tree',
     author='Yao-Yuan Mao, Peter Behroozi',
