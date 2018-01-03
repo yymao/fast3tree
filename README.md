@@ -1,4 +1,5 @@
 # fast3tree
+[![PyPI version](https://img.shields.io/pypi/v/fast3tree.svg)](https://pypi.python.org/pypi/fast3tree)
 
 This is a Python wrapper of [Peter Behroozi](http://www.peterbehroozi.com/)'s `fast3tree` code, which was
 (shamlessly) taken from his [Rockstar halo finder](https://bitbucket.org/gfcstanford/rockstar).
