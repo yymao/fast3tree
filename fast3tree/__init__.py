@@ -1,3 +1,3 @@
 from .core import *
-
-__version__ = '0.2.0'
+from .fof import *
+from .version import __version__

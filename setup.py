@@ -1,20 +1,21 @@
 """
 Project website: https://bitbucket.org/yymao/fast3tree
-Copyright (c) 2015 Yao-Yuan Mao (yymao)
+Copyright (c) 2015-2018 Yao-Yuan Mao (yymao)
 """
 import os
 from setuptools import setup
 
 lib_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'fast3tree')
-exec(open(os.path.join(lib_path, 'make_lib.py')).read())
+exec(open(os.path.join(lib_path, 'version.py')).read()) # pylint: disable=W0122
+exec(open(os.path.join(lib_path, 'make_lib.py')).read()) # pylint: disable=W0122
 make_lib(3, True, True, lib_path)
 
 setup(
     name='fast3tree',
-    version='0.2.0',
+    version=__version__,
     description='A Python wrapper of Peter Behroozi\'s fast3tree code.',
     url='https://bitbucket.org/yymao/fast3tree',
-    download_url = 'https://bitbucket.org/yymao/fast3tree/get/v0.2.0.tar.gz',
+    download_url = 'https://bitbucket.org/yymao/fast3tree/get/v{}.tar.gz'.format(__version__),
     author='Yao-Yuan Mao',
     author_email='yymao.astro@gmail.com',
     license='MIT',
@@ -34,4 +35,3 @@ setup(
     },
     install_requires = ['numpy'],
 )
-
