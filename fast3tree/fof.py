@@ -3,7 +3,8 @@ from .core import fast3tree
 
 __all__ = ['find_friends_of_friends']
 
-def find_friends_of_friends(points, linking_length, periodic_box_size=None):
+def find_friends_of_friends(points, linking_length, periodic_box_size=None,
+                            reassign_group_indices=True):
     group_ids = np.repeat(-1, len(points))
     with fast3tree(points) as tree:
         if periodic_box_size:
@@ -18,5 +19,6 @@ def find_friends_of_friends(points, linking_length, periodic_box_size=None):
                 group_ids[idx] = i
                 if len(group_ids_this):
                     group_ids[np.in1d(group_ids, group_ids_this)] = i
-
-    return np.unique(group_ids, return_inverse=True)[1]
+    if reassign_group_indices:
+        group_ids = np.unique(group_ids, return_inverse=True)[1]
+    return group_ids
