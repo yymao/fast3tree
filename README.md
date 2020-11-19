@@ -1,6 +1,11 @@
 # fast3tree
+
 [![PyPI version](https://img.shields.io/pypi/v/fast3tree.svg)](https://pypi.python.org/pypi/fast3tree)
 
+This Python package is a wrapper of the excellent, lightening fast `fast3tree` C library,
+a BSP tree implementation written by [Peter Behroozi](http://www.peterbehroozi.com/).
+The C source code `fast3tree.c` was (shamlessly) taken from Peter's
+[Rockstar halo finder](https://bitbucket.org/gfcstanford/rockstar).
 
 This project and Peter's `fast3tree.c` are both licensed under GPLv3.
 
@@ -8,12 +13,9 @@ This project and Peter's `fast3tree.c` are both licensed under GPLv3.
 
 You can install from pypi:
 
-    pip install fast3tree
-
-or if you need the latest version:
-
-    https://bitbucket.org/yymao/fast3tree/get/master.zip
-
+```bash
+pip install fast3tree
+```
 
 ## Example
 
