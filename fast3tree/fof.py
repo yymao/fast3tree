@@ -1,10 +1,12 @@
 import numpy as np
 from .core import fast3tree
 
-__all__ = ['find_friends_of_friends']
+__all__ = ["find_friends_of_friends"]
 
-def find_friends_of_friends(points, linking_length, periodic_box_size=None,
-                            reassign_group_indices=True):
+
+def find_friends_of_friends(
+    points, linking_length, periodic_box_size=None, reassign_group_indices=True
+):
     group_ids = np.repeat(-1, len(points))
     with fast3tree(points) as tree:
         if periodic_box_size:

@@ -1,37 +1,47 @@
 """
-Project website: https://bitbucket.org/yymao/fast3tree
-Copyright (c) 2015-2018 Yao-Yuan Mao (yymao)
+Project website: https://github.com/yymao/fast3tree
+Copyright (c) 2015-2020 Yao-Yuan Mao (yymao)
+Licensed under GPLv3
+
+`fast3tree/fast3tree.c` is written by Peter Behroozi (http://www.peterbehroozi.com/)
+ source taken from the Rockstar halo finder (https://bitbucket.org/gfcstanford/rockstar)
 """
 import os
 from setuptools import setup
 
+# pylint: disable=undefined-variable
+
 lib_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'fast3tree')
-exec(open(os.path.join(lib_path, 'version.py')).read()) # pylint: disable=W0122
-exec(open(os.path.join(lib_path, 'make_lib.py')).read()) # pylint: disable=W0122
-make_lib(3, True, True, lib_path)
+exec(open(os.path.join(lib_path, 'version.py')).read())
+exec(open(os.path.join(lib_path, 'make.py')).read())
+for d in range(2, 5):
+    make_lib(d, True, True, lib_path)   # noqa: F821
+    make_lib(d, False, True, lib_path)  # noqa: F821
 
 setup(
     name='fast3tree',
-    version=__version__,
+    version=__version__,  # noqa: F821
     description='A Python wrapper of Peter Behroozi\'s fast3tree code.',
-    url='https://bitbucket.org/yymao/fast3tree',
-    download_url = 'https://bitbucket.org/yymao/fast3tree/get/v{}.tar.gz'.format(__version__),
+    url='https://github.com/yymao/fast3tree',
+    download_url='https://github.com/yymao/fast3tree/archive/v{}.tar.gz'.format(__version__),  # noqa: F821
     author='Yao-Yuan Mao',
     author_email='yymao.astro@gmail.com',
-    license='MIT',
+    license='GPLv3',
     classifiers=[
-        'Development Status :: 3 - Alpha',
-        'Intended Audience :: End Users/Desktop',
+        'Development Status :: 4 - Beta',
         'Intended Audience :: Science/Research',
-        'License :: OSI Approved :: MIT License',
+        'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
+        'Operating System :: POSIX',
         'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
+        'Topic :: Scientific/Engineering',
         'Topic :: Scientific/Engineering :: Astronomy',
+        'Topic :: Software Development :: Libraries :: Python Modules',
     ],
     use_2to3=False,
     packages=['fast3tree'],
-    package_data={
-        'fast3tree': ['fast3tree.c', get_lib_name(3, True)],
-    },
-    install_requires = ['numpy'],
+    install_requires=['numpy'],
+    include_package_data=True,
 )
