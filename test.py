@@ -3,8 +3,10 @@ from fast3tree import fast3tree, get_distance, find_friends_of_friends
 
 points = np.random.rand(1000, 3)
 
+
 def find_sphere(c, points, r, box_size=-1):
     return np.where(get_distance(c, points, box_size) < r)[0]
+
 
 def test_fast3tree():
     c = np.array([0.5, 0.5, 0.5])
