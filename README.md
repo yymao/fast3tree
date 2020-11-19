@@ -2,7 +2,7 @@
 
 [![PyPI version](https://img.shields.io/pypi/v/fast3tree.svg)](https://pypi.python.org/pypi/fast3tree)
 
-This Python package is a wrapper of the excellent, lightening fast `fast3tree` C library,
+This Python package is a wrapper of the excellent, lightning fast `fast3tree` C library,
 a BSP tree implementation written by [Peter Behroozi](http://www.peterbehroozi.com/).
 The C source code `fast3tree.c` was (shamlessly) taken from Peter's
 [Rockstar halo finder](https://bitbucket.org/gfcstanford/rockstar).
