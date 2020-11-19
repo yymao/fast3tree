@@ -51,8 +51,14 @@ def test_fast3tree_index():
 
 
 def prepare_fof(n_points=50, n_groups=8, n_dim=2, scale=0.01, seed=0):
-    n_total = n_points*n_groups
-    points = np.vstack((np.random.RandomState(seed+i).randn(n_points, n_dim)*scale + np.random.RandomState(seed+i).rand(n_dim) for i in range(n_groups)))
+    n_total = n_points * n_groups
+    points = np.vstack(
+        (
+            np.random.RandomState(seed + i).randn(n_points, n_dim) * scale
+            + np.random.RandomState(seed + i).rand(n_dim)
+            for i in range(n_groups)
+        )
+    )
     answer = np.hstack((np.repeat(i, n_points) for i in range(n_groups)))
     shuffle = np.random.RandomState(seed).choice(n_total, n_total, replace=False)
     points = points[shuffle]
@@ -64,7 +70,7 @@ def test_fof_d2():
     scale = 0.01
     n_groups = 8
     points, answer = prepare_fof(n_groups=n_groups, n_dim=2, scale=scale, seed=100)
-    fof = find_friends_of_friends(points, scale*2)
+    fof = find_friends_of_friends(points, scale * 2)
     for i in range(n_groups):
         assert len(np.unique(answer[fof == i])) == 1
         assert len(np.unique(fof[answer == i])) == 1
@@ -74,7 +80,7 @@ def test_fof_d3():
     scale = 0.01
     n_groups = 8
     points, answer = prepare_fof(n_groups=n_groups, n_dim=3, scale=scale, seed=200)
-    fof = find_friends_of_friends(points, scale*3)
+    fof = find_friends_of_friends(points, scale * 3)
     for i in range(n_groups):
         assert len(np.unique(answer[fof == i])) == 1
         assert len(np.unique(fof[answer == i])) == 1
