@@ -1,0 +1,2 @@
+include LICENSE
+include fast3tree/fast3tree.c fast3tree/fast3tree*.so
