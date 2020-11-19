@@ -1,2 +1,2 @@
 include LICENSE README.md
-include fast3tree/fast3tree.c fast3tree/fast3tree*.so
+include fast3tree/fast3tree.c

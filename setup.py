@@ -13,10 +13,6 @@ from setuptools import setup
 
 lib_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'fast3tree')
 exec(open(os.path.join(lib_path, 'version.py')).read())
-exec(open(os.path.join(lib_path, 'make.py')).read())
-for d in range(2, 5):
-    make_lib(d, True, src_dir=lib_path, lib_dir=lib_path, raise_if_fall=False)   # noqa: F821
-    make_lib(d, False, src_dir=lib_path, lib_dir=lib_path, raise_if_fall=False)  # noqa: F821
 
 setup(
     name='fast3tree',
