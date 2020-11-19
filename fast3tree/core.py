@@ -112,18 +112,23 @@ class _fast3tree_lib:
 
 
 if hasattr(C.ctypes.pythonapi, "PyMemoryView_FromMemory"):
+
     def _read_from_address(ptr, dtype, count):
         buf_from_mem = C.ctypes.pythonapi.PyMemoryView_FromMemory
         buf_from_mem.restype = C.ctypes.py_object
         buf_from_mem.argtypes = (_ptr_ctype, C.ctypes.c_int, C.ctypes.c_int)
         buffer = buf_from_mem(ptr, np.dtype(dtype).itemsize * count, 0x100)
         return np.frombuffer(buffer, dtype, count=count)
+
+
 else:
     # Used in Python2 only
     def _read_from_address(ptr, dtype, count):
         return np.frombuffer(
             np.core.multiarray.int_asbuffer(
-                long(ptr), np.dtype(dtype).itemsize * count  # pylint: disable=undefined-variable # noqa: F821
+                long(ptr),  # pylint: disable=undefined-variable # noqa: F821
+                np.dtype(dtype).itemsize
+                * count,
             ),
             dtype,
             count=count,
