@@ -51,6 +51,7 @@ def test_fast3tree_index():
 
 
 def prepare_fof(n_points=50, n_groups=8, n_dim=2, scale=0.01, seed=0):
+    # pylint: disable=no-member
     n_total = n_points * n_groups
     points = np.vstack(
         (
