@@ -1,6 +1,8 @@
 """
-Project website: https://bitbucket.org/yymao/fast3tree
-Copyright (c) 2015-2018 Yao-Yuan Mao (yymao)
+Licensed under GPLv3
+
+`fast3tree/fast3tree.c` is written by Peter Behroozi (http://www.peterbehroozi.com/)
+ source taken from the Rockstar halo finder (https://bitbucket.org/gfcstanford/rockstar)
 """
 import os
 from setuptools import setup
@@ -18,12 +20,12 @@ setup(
     download_url = 'https://bitbucket.org/yymao/fast3tree/get/v{}.tar.gz'.format(__version__),
     author='Yao-Yuan Mao',
     author_email='yymao.astro@gmail.com',
-    license='MIT',
+    license='GPLv3',
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: End Users/Desktop',
         'Intended Audience :: Science/Research',
-        'License :: OSI Approved :: MIT License',
+        'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Topic :: Scientific/Engineering :: Astronomy',
