@@ -296,7 +296,10 @@ class fast3tree:
 
     def query_nearest_distance(self, center):
         """
-        Find the distance to the nearest point.
+        Find the distance to the nearest point that is *not* at `center`.
+
+        This function returns the distance to the *next* nearest point
+        if one of the points in the tree is located exactly at `center`.
 
         Parameters
         ----------
