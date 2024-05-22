@@ -54,13 +54,13 @@ def prepare_fof(n_points=50, n_groups=8, n_dim=2, scale=0.01, seed=0):
     # pylint: disable=no-member
     n_total = n_points * n_groups
     points = np.vstack(
-        (
+        [
             np.random.RandomState(seed + i).randn(n_points, n_dim) * scale
             + np.random.RandomState(seed + i).rand(n_dim)
             for i in range(n_groups)
-        )
+        ]
     )
-    answer = np.hstack((np.repeat(i, n_points) for i in range(n_groups)))
+    answer = np.hstack([np.repeat(i, n_points) for i in range(n_groups)])
     shuffle = np.random.RandomState(seed).choice(n_total, n_total, replace=False)
     points = points[shuffle]
     answer = answer[shuffle]
