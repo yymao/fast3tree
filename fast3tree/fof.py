@@ -20,7 +20,7 @@ def find_friends_of_friends(
             else:
                 group_ids[idx] = i
                 if len(group_ids_this):
-                    group_ids[np.in1d(group_ids, group_ids_this)] = i
+                    group_ids[np.isin(group_ids, group_ids_this)] = i
     if reassign_group_indices:
         group_ids = np.unique(group_ids, return_inverse=True)[1]
     return group_ids
